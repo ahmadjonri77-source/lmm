@@ -30,6 +30,8 @@ jobs:
               cd lmn_backend   
               git pull origin main  
             fi
+
+            cd /home/ubuntu/lmn_backend
   
             echo "Stopping containers"
             sudo docker compose down
