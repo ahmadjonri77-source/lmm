@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  full_name      String
+  phone          String          @unique
+  password       String
+  email          String?
+  file           String?
+  role           UserRole
+  create_at      DateTime        @default(now())
+  update_at      DateTime        @updatedAt
+  courses        Courses[]
+  mentorProfiles MentorProfile?
+
+  @@map("users")
+}
+
+model MentorProfile {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  experience  Float?
+  job         String?
+  web_link    String?
+  description String?
+  facebook    String?
+  telegram    String?
+  linkedin    String?
+  instagram   String?
+  github      String?
+  create_at   DateTime  @default(now())
+  update_at   DateTime  @updatedAt
+  courses     Courses[]
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("mentor_profile")
+}
+
+model Categories {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  create_at DateTime  @default(now())
+  update_at DateTime  @updatedAt
+  courses   Courses[]
+
+  @@map("categories")
+}
+
+model Courses {
+  id            Int           @id @default(autoincrement())
+  
+  assistantId   Int?
+  mentorId      Int
+  name          String        @unique
+  banner        String
+  intro_video   String
+  description   String
+  price         Decimal
+  categoryId    Int
+  level         CourseLevel
+  
+  create_at     DateTime      @default(now())
+  update_at     DateTime      @updatedAt
+  user          User?         @relation(fields: [assistantId], references: [id])
+  categories    Categories    @relation(fields: [categoryId], references: [id])
+  mentorProfile MentorProfile @relation(fields: [mentorId], references: [id])
+  sections      Sections[]
+
+  @@map("courses")
+}
+
+model Sections {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  courseId  Int
+  create_at DateTime  @default(now())
+  update_at DateTime  @updatedAt
+  lessons   Lessons[]
+  courses   Courses   @relation(fields: [courseId], references: [id])
+
+  @@map("sections")
+}
+
+model Lessons {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  sectionId   Int
+  description String
+  file        String
+  create_at   DateTime    @default(now())
+  update_at   DateTime    @updatedAt
+  exams       Exam[]
+  homeworks   Homeworks[]
+  section     Sections    @relation(fields: [sectionId], references: [id])
+  materials   Materials[]
+
+  @@map("lessons")
+}
+
+model Materials {
+  id            Int            @id @default(autoincrement())
+  lessonId      Int
+  description   String
+  file          String
+  create_at     DateTime       @default(now())
+  update_at     DateTime       @updatedAt
+  materialFiles MaterialFile[]
+  lessons       Lessons        @relation(fields: [lessonId], references: [id])
+
+  @@map("materials")
+}
+
+model MaterialFile {
+  id         Int       @id @default(autoincrement())
+  materialId Int
+  file       String
+  materials  Materials @relation(fields: [materialId], references: [id])
+
+  @@map("material_files")
+}
+
+model Homeworks {
+  id          Int      @id @default(autoincrement())
+  lessonId    Int
+  description String
+  file        String?
+  create_at   DateTime @default(now())
+  update_at   DateTime @updatedAt
+  lessons     Lessons  @relation(fields: [lessonId], references: [id])
+
+  @@map("homeworks")
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  lessonId  Int
+  question  String
+  variantA  String
+  variantB  String
+  variantC  String
+  variantD  String
+  answer    Answer
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+  lessons   Lessons  @relation(fields: [lessonId], references: [id])
+
+  @@map("exam")
+}
+
+enum UserRole {
+  ADMIN
+  SUPERADMIN
+  TEACHER
+  ASISTENT
+  STUDENT
+}
+
+enum CourseLevel {
+  BEGINNER
+  ELEMENTERIY
+  PREINTERMEDIA
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Answer {
+  variantA
+  variantB
+  variantC
+  variantD
+}
