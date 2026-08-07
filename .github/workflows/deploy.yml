@@ -1,5 +1,3 @@
-name: Deploy Backend
-
 on:
   push:
     branches:
@@ -11,52 +9,35 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Deploy over SSH
+      - name: Deploy over SSH and run Docker Compose
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-
           script: |
-            set -e
-
-            echo "🚀 Deployment started"
-
+            echo "Creating project folder if it doesn't exist!"
+            mkdir -p /home/ubuntu
             cd /home/ubuntu
 
             if [ ! -d "lmn_backend/.git" ]; then
-              echo "📥 Cloning repository..."
-
-              git clone https://github.com/ahmadjonri77-source/lmn_backend.git
-
+              echo "Cloning repository!" 
+              git clone https://github.com/ahmadjonri77-source/lmn_backend
             else
-              echo "🔄 Pulling latest changes..."
-
-              cd /home/ubuntu/lmn_backend
-
-              git fetch origin main
-              git reset --hard origin/main
+              echo "Pulling latest changes!"
+              cd lmn_backend   
+              git pull origin main  
             fi
 
-            cd /home/ubuntu/lmn_backend
-
-            echo "🛑 Stopping containers..."
-
+            
+  
+            echo "Stopping containers"
             sudo docker compose down
 
-            echo "🔨 Building containers..."
+            echo "Building containers"
+            sudo docker compose build 
 
-            sudo docker compose build
-
-            echo "🚀 Starting containers..."
-
-            sudo docker compose up -d
-
-            echo "📦 Checking containers..."
-
-            sudo docker compose ps
-
-            echo "✅ Deployment finished!"
+            echo "Running containers"
+            sudo docker compose up -d 
