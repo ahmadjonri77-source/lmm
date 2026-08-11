@@ -18,8 +18,22 @@ model User {
   update_at      DateTime        @updatedAt
   courses        Courses[]
   mentorProfiles MentorProfile?
+  passwordResets PasswordReset[]
 
   @@map("users")
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
 }
 
 model MentorProfile {
@@ -53,18 +67,18 @@ model Categories {
 }
 
 model Courses {
-  id            Int           @id @default(autoincrement())
-  
-  assistantId   Int?
-  mentorId      Int
-  name          String        @unique
-  banner        String
-  intro_video   String
-  description   String
-  price         Decimal
-  categoryId    Int
-  level         CourseLevel
-  
+  id Int @id @default(autoincrement())
+
+  assistantId Int?
+  mentorId    Int
+  name        String      @unique
+  banner      String
+  intro_video String
+  description String
+  price       Decimal
+  categoryId  Int
+  level       CourseLevel
+
   create_at     DateTime      @default(now())
   update_at     DateTime      @updatedAt
   user          User?         @relation(fields: [assistantId], references: [id])

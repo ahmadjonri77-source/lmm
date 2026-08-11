@@ -30,8 +30,6 @@ export class LessonController {
       destination: "./src/uploads/videos",
       filename: (req, file, cb) => {
         const filename = new Date().getTime() + ".mp4"
-        console.log(filename, 2);
-
         cb(null, filename)
       }
     })
@@ -43,7 +41,6 @@ export class LessonController {
 
   ) {
 
-
     try {
       return await this.lessonService.createLesson(payload, file.filename);
     } catch (error) {
@@ -54,7 +51,7 @@ export class LessonController {
     }
   }
 
-  @Get()
+  @Get("all")
   findAllLessons() {
     return this.lessonService.findAllLessons();
   }
@@ -64,12 +61,42 @@ export class LessonController {
     return this.lessonService.findOneLesson(id);
   }
 
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        sectionId: { type: "number" },
+        description: { type: "string" },
+        file: { format: "binary", type: "string" },
+      }
+    }
+  })
   @Patch(':id')
-  update(
+  @UseInterceptors(FileInterceptor("file", {
+    storage: diskStorage({
+      destination: "./src/uploads/videos",
+      filename: (req, file, cb) => {
+        const filename = new Date().getTime() + ".mp4"
+        cb(null, filename)
+      }
+    })
+  }))
+  async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateLessonDto: UpdateLessonDto
+    @Body() payload: UpdateLessonDto,
+    @UploadedFile() file: Express.Multer.File
   ) {
-    return this.lessonService.update(id, updateLessonDto);
+    try {
+      return this.lessonService.update(id, payload, file?.filename);
+    } catch (error) {
+      if (file) {
+        await unlink(join(process.cwd(), file.path)).catch(() => { })
+      }
+      throw error
+
+    }
   }
 
   @Delete(':id')

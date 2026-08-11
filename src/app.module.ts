@@ -10,6 +10,8 @@ import { CategoryModule } from './courses/category/category.module';
 import { CourseModule } from './courses/course/course.module';
 import { SectionModule } from './courses/section/section.module';
 import { LessonModule } from './courses/lesson/lesson.module';
+import { HomeworkModule } from './courses/homework/homework.module';
+import { BotModule } from './bot/bot.module';
 
 @Module({
   imports: [
@@ -28,7 +30,9 @@ import { LessonModule } from './courses/lesson/lesson.module';
     CategoryModule,
     CourseModule,
     SectionModule,
-    LessonModule
+    LessonModule,
+    HomeworkModule,
+    BotModule
   ],
 })
 export class AppModule {}

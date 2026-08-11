@@ -49,9 +49,9 @@ export class UserService {
     }
     async updateAdmin(payload: UpdateAdminDto, id: number) {
         const existAdmin = await this.prisma.user.findFirst({
-            where: { 
-                id:id,
-                role:UserRole.ADMIN
+            where: {
+                id: id,
+                role: UserRole.ADMIN
             }
 
         })
@@ -60,7 +60,10 @@ export class UserService {
         }
         await this.prisma.user.update({
             where: { id: id },
-            data: payload
+            data: {
+                ...payload
+
+            }
         })
 
         return {

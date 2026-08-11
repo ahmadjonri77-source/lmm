@@ -60,7 +60,7 @@ export class MentorService {
   async getAllMentor() {
     const allMentor = await this.prisma.user.findMany({
       where: {
-        role: UserRole.TEACHER
+        role: UserRole.TEACHER  
       },
       include: {
         mentorProfiles: true,
