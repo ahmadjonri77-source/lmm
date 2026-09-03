@@ -67,3 +67,19 @@ export class CreateCourseDto {
     @IsEnum(CourseLevel)
     level!: CourseLevel
 }
+export class BuyCourseDto {
+
+    @ApiProperty()
+    @Type(() => Number)
+    @IsInt()
+    userId!: number
+
+
+    @ApiProperty()
+    @Type(() => Number)
+    @IsInt()
+    coursesId!: number
+
+
+
+}

@@ -4,6 +4,7 @@ import { AuthService } from "./auth.service";
 import { JwtToken } from "src/common/config/jwt";
 import { AuthController } from "./auth.controller";
 import { PrismaModule } from "src/core/database/prisma.module";
+import { RedisModule } from "../redis/redis.module";
 
 @Module({
     imports:[
@@ -13,7 +14,8 @@ import { PrismaModule } from "src/core/database/prisma.module";
                 expiresIn:'1h'
             }
         }),
-        PrismaModule
+        PrismaModule,
+        RedisModule
     ],
     controllers:[AuthController],
     providers:[AuthService,JwtToken],

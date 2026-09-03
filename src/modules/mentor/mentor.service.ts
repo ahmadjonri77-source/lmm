@@ -60,7 +60,7 @@ export class MentorService {
   async getAllMentor() {
     const allMentor = await this.prisma.user.findMany({
       where: {
-        role: UserRole.TEACHER  
+        role: UserRole.TEACHER
       },
       include: {
         mentorProfiles: true,
@@ -70,6 +70,23 @@ export class MentorService {
       success: true,
       data: allMentor
     }
+  }
+
+  async getAllMentorLanding() {
+    const mentor = await this.prisma.user.findMany({
+      where: { role: UserRole.TEACHER },
+      select:{
+        id:true,
+        file:true,
+        full_name:true,
+      }
+    })
+
+    return {
+      success: true,
+      data: mentor
+    }
+
   }
 
   async getOneMentor(id: number) {
@@ -95,7 +112,7 @@ export class MentorService {
     };
   }
 
-  async updateMentor(payload: UpdateMentorDto, id: number) {
+  async updateMentor(payload: UpdateMentorDto, id: number, filename?: string) {
 
     const existmentor = await this.prisma.user.findFirst({
       where: {
@@ -106,12 +123,18 @@ export class MentorService {
     if (!existmentor) {
       throw new NotFoundException("Mentor not found with this id")
     }
+    let hash2 = existmentor.password
+    if (payload.password) {
+      hash2 = await hashPassword(payload.password)
+    }
     await this.prisma.user.update({
       where: { id: id },
       data: {
         full_name: payload.full_name,
         phone: payload.phone,
         email: payload.email,
+        password: hash2,
+        file: filename,
 
         mentorProfiles: {
           update: {

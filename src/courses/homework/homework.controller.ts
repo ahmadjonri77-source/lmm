@@ -1,15 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { HomeworkService } from './homework.service';
 import { CreateHomeworkDto } from './dto/create-homework.dto';
 import { UpdateHomeworkDto } from './dto/update-homework.dto';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { Roles } from 'src/common/decorator/role';
+import { UserRole } from '@prisma/client';
+import { AuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RoleGuard } from 'src/common/guards/role.guard';
 
+@ApiBearerAuth('access-token')
 @Controller('homework')
 export class HomeworkController {
   constructor(private readonly homeworkService: HomeworkService) { }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -57,16 +67,31 @@ export class HomeworkController {
     return this.homeworkService.createHomework(createHomeworkDto, file?.filename);
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @Get("all")
   getAllHomeworks() {
     return this.homeworkService.getAllHomeworks();
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @Get("one/:id")
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.homeworkService.findOne(id);
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -111,8 +136,13 @@ export class HomeworkController {
     return this.homeworkService.updateHomework(id, updateHomeworkDto, file?.filename);
   }
 
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @Delete(':id')
-  remove(@Param('id',ParseIntPipe) id: number) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.homeworkService.remove(id);
   }
 }

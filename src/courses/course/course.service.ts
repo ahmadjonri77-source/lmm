@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateCourseDto } from './dto/create-course.dto';
+import { BuyCourseDto, CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/core/database/prisma.service';
 import { UserRole } from '@prisma/client';
@@ -8,7 +8,7 @@ import { join } from 'path';
 
 @Injectable()
 export class CourseService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService,) { }
 
   async createCourse(payload: CreateCourseDto, banner, intro_video) {
 
@@ -45,7 +45,7 @@ export class CourseService {
     if (!mentor) {
       throw new NotFoundException("Mentor profile not found");
     }
-    
+
     await this.prisma.courses.create({
 
 
@@ -69,8 +69,48 @@ export class CourseService {
 
   }
 
+  async buy_course(payload: BuyCourseDto) {
+    const existuser = await this.prisma.user.findUnique({
+      where: { id: payload.userId }
+    })
+    const existCourse = await this.prisma.courses.findUnique({
+      where: { id: payload.coursesId }
+    })
+    if (!existuser) {
+      throw new NotFoundException("User not found with this id");
+    }
+    if (!existCourse) {
+      throw new NotFoundException("Course not found with this id");
+    }
+
+    await this.prisma.assignedCourse.create({
+      data: payload
+    })
+
+    return {
+      success: true
+    }
+
+
+
+  }
+  async buy_course_get() {
+
+    const all = await this.prisma.assignedCourse.findMany()
+
+    return {
+      success: true,
+      data: all
+    }
+
+  }
+
   async findAllCourses() {
-    const allCourses = await this.prisma.courses.findMany()
+    const allCourses = await this.prisma.courses.findMany({
+      include: {
+        categories: true
+      }
+    })
 
     return {
       success: true,
@@ -85,13 +125,10 @@ export class CourseService {
     if (!existCourse) {
       throw new NotFoundException("Course not found with this id");
     }
-    const Course = await this.prisma.courses.findUnique({
-      where: { id: id }
-    })
 
     return {
       success: true,
-      data: Course
+      data: existCourse
     };
   }
 
@@ -105,26 +142,39 @@ export class CourseService {
     const course = await this.prisma.courses.findUnique({
       where: { id: id }
     })
-   
 
-   if(payload.mentorId !== 0){
-     const mentor = await this.prisma.mentorProfile.findUnique({
-      where: {
-        userId: payload.mentorId,
-      },
-    });
-    if (!mentor) {
-      throw new NotFoundException("Mentor profile not found");
-    }
-   }
-    const existname = await this.prisma.courses.findUnique({
-      where: { name: payload.name }
-    })
 
-    if (existname) {
-      throw new ConflictException("This course name already exist")
+    if (payload.mentorId !== 0) {
+      const mentor = await this.prisma.mentorProfile.findUnique({
+        where: {
+          userId: payload.mentorId,
+        },
+      });
+      if (!mentor) {
+        throw new NotFoundException("Mentor profile not found");
+      }
     }
-    
+    if (course?.name !== payload.name) {
+      const existname = await this.prisma.courses.findUnique({
+        where: { name: payload.name }
+      })
+
+      if (existname) {
+        throw new ConflictException("This course name already exist")
+      }
+
+    }
+    // const mentor = await this.prisma.mentorProfile.findUnique({
+    //   where: {
+    //     userId: payload.mentorId,
+    //   },
+    // });
+
+    // if (!mentor) {
+    //   throw new NotFoundException("Mentor profile not found");
+    // }
+
+
     await this.prisma.courses.update({
       where: { id: id },
 
@@ -132,20 +182,20 @@ export class CourseService {
       data: {
         mentorId: payload.mentorId || course?.mentorId,
         assistantId: payload.assistantId || course?.assistantId,
-        banner: banner ?? course?.banner,
-        intro_video: intro_video ?? course?.intro_video,
+        banner: banner || course?.banner,
+        intro_video: intro_video || course?.intro_video,
         name: payload.name || course?.name,
-        description: payload.description ?? course?.description,
+        description: payload.description || course?.description,
         categoryId: payload.categoryId || course?.categoryId,
         price: payload.price || course?.price,
         level: payload.level || course?.level,
       }
     })
-    return{
-      success:true,
-      message:"Course successfull updated"
+    return {
+      success: true,
+      message: "Course successfull updated"
     }
-    
+
   }
 
   async deleteCourse(id: number) {
@@ -155,15 +205,15 @@ export class CourseService {
     if (!existCourse) {
       throw new NotFoundException("Course not found with this id");
     }
-    
+
     await this.prisma.courses.delete({
       where: { id: id }
     })
-    if(existCourse.banner){
-      await unlink( join(process.cwd(), "src/uploads/images",existCourse.banner)).catch(()=>{})
+    if (existCourse.banner) {
+      await unlink(join(process.cwd(), "src/uploads/images", existCourse.banner)).catch(() => { })
     }
-    if(existCourse.intro_video){
-      await unlink(join(process.cwd(),"src/uploads/videos", existCourse.intro_video)).catch(()=>{})
+    if (existCourse.intro_video) {
+      await unlink(join(process.cwd(), "src/uploads/videos", existCourse.intro_video)).catch(() => { })
     }
 
 

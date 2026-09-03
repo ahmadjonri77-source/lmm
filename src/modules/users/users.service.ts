@@ -11,7 +11,18 @@ export class UserService {
 
     async getAllAdmin() {
         const allAdmin = await this.prisma.user.findMany({
-            where: { role: UserRole.ADMIN }
+            where: { role: UserRole.ADMIN },
+            select: {
+                id: true,
+                full_name: true,
+                phone: true,
+                email: true,
+                file: true,
+                role: true,
+                status: true,
+                create_at: true,
+                update_at: true
+            }
         })
         return {
             success: true,
@@ -31,7 +42,7 @@ export class UserService {
             }
         })
         if (existAdmin) {
-            throw new ConflictException("Admin already exist with this email or phone")
+            throw new ConflictException("User already exist with this email or phone")
         }
         await this.prisma.user.create({
             data: {
@@ -47,7 +58,7 @@ export class UserService {
         }
 
     }
-    async updateAdmin(payload: UpdateAdminDto, id: number) {
+    async updateAdmin(payload: UpdateAdminDto, id: number, filename?: string) {
         const existAdmin = await this.prisma.user.findFirst({
             where: {
                 id: id,
@@ -61,7 +72,8 @@ export class UserService {
         await this.prisma.user.update({
             where: { id: id },
             data: {
-                ...payload
+                ...payload,
+                file: filename
 
             }
         })

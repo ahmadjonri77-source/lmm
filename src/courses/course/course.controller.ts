@@ -1,18 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, UploadedFiles, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, UploadedFiles, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { CourseService } from './course.service';
-import { CreateCourseDto } from './dto/create-course.dto';
+import { BuyCourseDto, CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { CourseLevel } from '@prisma/client';
+import { CourseLevel, UserRole } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import { extname } from 'path';
+import { AuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RoleGuard } from 'src/common/guards/role.guard';
+import { Roles } from 'src/common/decorator/role';
+
 
 @Controller('course')
 export class CourseController {
   constructor(private readonly courseService: CourseService) { }
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -46,8 +56,8 @@ export class CourseController {
       },
 
       filename: (req, file, cb) => {
-      
-       const filename = `${Date.now()}${extname(file.originalname).toLowerCase()}`;
+
+        const filename = `${Date.now()}${extname(file.originalname).toLowerCase()}`;
         cb(null, filename)
       }
 
@@ -74,30 +84,58 @@ export class CourseController {
       );
     } catch (error) {
       if (files.banner?.[0]) {
-      await unlink(files.banner[0].path).catch(() => {});
-    }
+        await unlink(files.banner[0].path).catch(() => { });
+      }
 
-    if (files.intro_video?.[0]) {
-      await unlink(files.intro_video[0].path).catch(() => {});
-    }
+      if (files.intro_video?.[0]) {
+        await unlink(files.intro_video[0].path).catch(() => { });
+      }
 
-    throw error;
+      throw error;
 
     }
   }
 
+  @Post("assignedCourse")
+  async buy_course(
+    @Body() payload: BuyCourseDto
+  ){
+    return await this.courseService.buy_course(payload)
+  }
 
+  @Get("all/buy")
+  buy_course_get() {
+    return this.courseService.buy_course_get();
+  }
+
+  // @UseGuards(AuthGuard, RoleGuard)
+  // @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  // @ApiOperation({
+  //   summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  // })
   @Get("all")
   findAllCourses() {
     return this.courseService.findAllCourses();
   }
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @Get("one/:id")
   findOne(@Param("id", ParseIntPipe) id: number) {
     return this.courseService.findOneCourse(id);
   }
 
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -153,6 +191,12 @@ export class CourseController {
     );
   }
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @Delete(":id")
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.courseService.deleteCourse(id);

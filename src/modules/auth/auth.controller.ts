@@ -13,8 +13,8 @@ export class AuthController {
         return this.authService.login(payload)
     }
     @Post("verify-otp")
-    verifyOtp(@Body() body:VerifyOtpDto){
-        return this.authService.verifyOtp(body.phone,body.otp)
+    verifyOtp(@Body() payload:VerifyOtpDto){
+        return this.authService.verifyOtp(payload.phone,payload.otp)
         
     }
     @Post("resetPassword")

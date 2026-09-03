@@ -38,4 +38,5 @@ export class UpdateBot {
         const kod = await this.botService.createOtp(phone)
         ctx.reply(`Sizning tasdiqlash kodingiz: ${kod}\n\nUshbu kodni ro'yxatdan o'tish sahifasiga kiriting. Kod 5 daqiqa davomida faol bo'ladi.`)
     }
+    
 }

@@ -9,19 +9,39 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagg
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { CreateMentorDto } from './dto/create-mentor.dto';
+import { extname, join } from 'path';
+import * as fs from 'fs';
+import convert from 'heic-convert';
+import { convertHeic } from 'src/common/utils/image.util';
 
 
-@ApiBearerAuth('access-token')
+
+
+
 @Controller('mentor')
 export class MentorController {
   constructor(private readonly mentorService: MentorService) { }
 
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: `${UserRole.SUPERADMIN}, ${UserRole.ADMIN}` })
 
   @Get("all")
   getAllMentor() {
     return this.mentorService.getAllMentor();
   }
+
+  @Get("all/landing")
+  getAllMentorLanding() {
+    return this.mentorService.getAllMentorLanding();
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: `${UserRole.SUPERADMIN}, ${UserRole.ADMIN}` })
 
   @Get('one/:id')
   getOneMentor(@Param('id') id: string) {
@@ -29,10 +49,10 @@ export class MentorController {
   }
 
 
-
-  // @UseGuards(AuthGuard, RoleGuard)
-  // @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
-  // @ApiOperation({ summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}` })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: `${UserRole.SUPERADMIN}, ${UserRole.ADMIN}` })
 
   @ApiConsumes("multipart/form-data")
   @ApiBody({
@@ -57,9 +77,7 @@ export class MentorController {
       },
       required: ["full_name", "phone", "password"]
     }
-
   })
-
   @Post()
 
   @UseInterceptors(FileInterceptor("file", {
@@ -72,26 +90,75 @@ export class MentorController {
     })
   }))
 
-  createMentor(
+ async  createMentor(
     @Body() payload: CreateMentorDto,
     @UploadedFile() file?: Express.Multer.File
   ) {
-    return this.mentorService.createMentor(payload, file?.filename);
+    const filename = file ? await convertHeic(file) : undefined
+    return this.mentorService.createMentor(payload, filename);
   }
 
 
 
 
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: `${UserRole.SUPERADMIN}, ${UserRole.ADMIN}` })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        full_name: { type: "string" },
+        phone: { type: "string" },
+        email: { type: "string" },
+        password: { type: "string" },
+        file: { format: "binary", type: "string" },
+        experience: { type: "number", nullable: true },
+        job: { type: "string", nullable: true },
+        web_link: { type: "string", nullable: true },
+        description: { type: "string", nullable: true },
+        facebook: { type: "string", nullable: true },
+        telegram: { type: "string", nullable: true },
+        linkedin: { type: "string", nullable: true },
+        instagram: { type: "string", nullable: true },
+        github: { type: "string", nullable: true },
+      }
 
+    }
+  })
   @Patch(':id')
-  updateMentor(
+  @UseInterceptors(FileInterceptor("file", {
+    storage: diskStorage({
+      destination: "./src/uploads/images",
+      filename: (req, file, cb) => {
+        const ext = extname(file.originalname).toLowerCase()
+
+        const filename = new Date().getTime() + ext
+        cb(null, filename)
+      }
+    })
+  }))
+  async updateMentor(
     @Body() payload: UpdateMentorDto,
-    @Param("id", ParseIntPipe) id: number) {
-    return this.mentorService.updateMentor(payload, id);
+    @Param("id", ParseIntPipe) id: number,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+
+    const filename = file ? await convertHeic(file) : undefined
+
+    return this.mentorService.updateMentor(payload, id, filename);
   }
+
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: `${UserRole.SUPERADMIN}, ${UserRole.ADMIN}` })
 
   @Delete(":id")
-   deleteMentor(@Param("id", ParseIntPipe) id: number) {
+  deleteMentor(@Param("id", ParseIntPipe) id: number) {
     return this.mentorService.deleteMentor(+id);
   }
 }

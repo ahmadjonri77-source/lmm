@@ -12,6 +12,9 @@ import { SectionModule } from './courses/section/section.module';
 import { LessonModule } from './courses/lesson/lesson.module';
 import { HomeworkModule } from './courses/homework/homework.module';
 import { BotModule } from './bot/bot.module';
+import { StudentsModule } from './modules/students/students.module';
+import { RedisModule } from './modules/redis/redis.module';
+import { AssistendModule } from './modules/assistend/assistend.module';
 
 @Module({
   imports: [
@@ -22,17 +25,20 @@ import { BotModule } from './bot/bot.module';
       secret:process.env.SECRET_KEY,
       global:true
     }),
+    RedisModule,
     PrismaModule,
     SeederModule,
     AuthModule,
     UsersModule,
+    StudentsModule,
+    AssistendModule,
     MentorModule,
     CategoryModule,
     CourseModule,
     SectionModule,
     LessonModule,
     HomeworkModule,
-    BotModule
+    BotModule,
   ],
 })
 export class AppModule {}

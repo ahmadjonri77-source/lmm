@@ -6,39 +6,59 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  ADMIN
+  SUPERADMIN
+  TEACHER
+  ASISTENT
+  STUDENT
+}
+
+enum CourseLevel {
+  BEGINNER
+  ELEMENTERIY
+  PREINTERMEDIA
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Answer {
+  variantA
+  variantB
+  variantC
+  variantD
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  FREEZE
+}
+
 model User {
-  id             Int             @id @default(autoincrement())
-  full_name      String
-  phone          String          @unique
-  password       String
-  email          String?
-  file           String?
-  role           UserRole
-  create_at      DateTime        @default(now())
-  update_at      DateTime        @updatedAt
-  courses        Courses[]
-  mentorProfiles MentorProfile?
-  passwordResets PasswordReset[]
+  id        Int      @id @default(autoincrement())
+  full_name String
+  phone     String   @unique
+  password  String
+  email     String?
+  file      String?
+  role      UserRole
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+  status    Status   @default(ACTIVE)
+
+  courses       Courses[]
+  mentorCourses Courses[] @relation("CourseMentor")
+
+  mentorProfiles  MentorProfile?
+  assignedCourses AssignedCourse[]
 
   @@map("users")
 }
 
-model PasswordReset {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  otp       String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("password_resets")
-}
-
 model MentorProfile {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @unique
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
   experience  Float?
   job         String?
   web_link    String?
@@ -48,12 +68,21 @@ model MentorProfile {
   linkedin    String?
   instagram   String?
   github      String?
-  create_at   DateTime  @default(now())
-  update_at   DateTime  @updatedAt
-  courses     Courses[]
-  user        User      @relation(fields: [userId], references: [id])
+  create_at   DateTime @default(now())
+  update_at   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("mentor_profile")
+}
+
+model AssignedCourse {
+  userId    Int
+  coursesId Int
+  user      User    @relation(references: [id], fields: [userId], onDelete: Cascade)
+  course    Courses @relation(references: [id], fields: [coursesId],onDelete: Cascade)
+
+  @@id([userId,coursesId])
+  
 }
 
 model Categories {
@@ -77,14 +106,17 @@ model Courses {
   description String
   price       Decimal
   categoryId  Int
+  status      Status      @default(ACTIVE)
   level       CourseLevel
 
-  create_at     DateTime      @default(now())
-  update_at     DateTime      @updatedAt
-  user          User?         @relation(fields: [assistantId], references: [id])
-  categories    Categories    @relation(fields: [categoryId], references: [id])
-  mentorProfile MentorProfile @relation(fields: [mentorId], references: [id])
-  sections      Sections[]
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+
+  user            User?            @relation(fields: [assistantId], references: [id], onDelete: Cascade)
+  mentor          User             @relation("CourseMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+  sections        Sections[]
+  categories      Categories?      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  assignedCourses AssignedCourse[]
 
   @@map("courses")
 }
@@ -96,7 +128,7 @@ model Sections {
   create_at DateTime  @default(now())
   update_at DateTime  @updatedAt
   lessons   Lessons[]
-  courses   Courses   @relation(fields: [courseId], references: [id])
+  courses   Courses   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("sections")
 }
@@ -111,7 +143,7 @@ model Lessons {
   update_at   DateTime    @updatedAt
   exams       Exam[]
   homeworks   Homeworks[]
-  section     Sections    @relation(fields: [sectionId], references: [id])
+  section     Sections    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   materials   Materials[]
 
   @@map("lessons")
@@ -125,7 +157,7 @@ model Materials {
   create_at     DateTime       @default(now())
   update_at     DateTime       @updatedAt
   materialFiles MaterialFile[]
-  lessons       Lessons        @relation(fields: [lessonId], references: [id])
+  lessons       Lessons        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@map("materials")
 }
@@ -134,7 +166,7 @@ model MaterialFile {
   id         Int       @id @default(autoincrement())
   materialId Int
   file       String
-  materials  Materials @relation(fields: [materialId], references: [id])
+  materials  Materials @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@map("material_files")
 }
@@ -146,7 +178,7 @@ model Homeworks {
   file        String?
   create_at   DateTime @default(now())
   update_at   DateTime @updatedAt
-  lessons     Lessons  @relation(fields: [lessonId], references: [id])
+  lessons     Lessons  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@map("homeworks")
 }
@@ -162,30 +194,7 @@ model Exam {
   answer    Answer
   create_at DateTime @default(now())
   update_at DateTime @updatedAt
-  lessons   Lessons  @relation(fields: [lessonId], references: [id])
+  lessons   Lessons  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@map("exam")
-}
-
-enum UserRole {
-  ADMIN
-  SUPERADMIN
-  TEACHER
-  ASISTENT
-  STUDENT
-}
-
-enum CourseLevel {
-  BEGINNER
-  ELEMENTERIY
-  PREINTERMEDIA
-  INTERMEDIATE
-  ADVANCED
-}
-
-enum Answer {
-  variantA
-  variantB
-  variantC
-  variantD
 }

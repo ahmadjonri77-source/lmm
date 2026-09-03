@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsEmail, IsMobilePhone, IsString, MaxLength, MinLength} from "class-validator"
+import { Transform } from "class-transformer"
+import { IsEmail, IsMobilePhone, IsOptional, IsString, MaxLength, MinLength} from "class-validator"
 
 export class CreateAdminDto{
     @ApiProperty()
@@ -12,8 +13,10 @@ export class CreateAdminDto{
     @IsMobilePhone()
     phone!:string
 
+    @Transform(({ value }) => value === '' ? undefined : value)
     @ApiProperty()
     @IsEmail()
+    @IsOptional()
     email!:string
 
     @ApiProperty()

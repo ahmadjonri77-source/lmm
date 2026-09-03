@@ -5,14 +5,17 @@ import * as argon from "argon2"
 import { JwtToken } from "src/common/config/jwt";
 import { randomInt } from "crypto";
 import hashPassword from "src/common/config/hash";
-import { message } from "telegraf/filters";
+import { Status } from "@prisma/client";
+import { RedisService } from "../redis/redis.service";
+// import { message } from "telegraf/filters";
+
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly prisma: PrismaService,
-        private jwtToken: JwtToken
-
+        private jwtToken: JwtToken,
+        private readonly redisService: RedisService,
     ) { }
 
 
@@ -33,8 +36,12 @@ export class AuthService {
             throw new NotFoundException("User not found with this email or phone")
 
         }
+        if (existUser.status !== Status.ACTIVE) {
+            throw new NotFoundException("User not ACTIVE")
+        }
         return {
             success: true,
+            role: existUser.role,
             accessToken: this.jwtToken.jwtAccessToken({ id: existUser.id, full_name: existUser.full_name, role: existUser.role })
         }
     }
@@ -45,54 +52,48 @@ export class AuthService {
             where: { phone: "+" + phone }
         })
 
-        if (!user) {
-            throw new NotFoundException("User not found with this phone number")
-        }
         const otp = randomInt(100000, 1000000)
-        const expiresAt = new Date(Date.now() + 5 * 60 * 100,)
+        if (!user) {
+            await this.redisService.setRegOtp(
+                "+"+phone,
+                String(otp),
+            );
 
+            return otp;
+        }
+        await this.redisService.setResOtp(
+            "+"+phone,
+            String(otp),
+        );
 
-
-        await this.prisma.passwordReset.create({
-            data: {
-                userId: user.id,
-                otp: String(otp),
-                expiresAt,
-            }
-        })
+    
         return otp
     }
 
     async verifyOtp(phone: string, otp: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { phone: phone }
-        })
+    const normalizedPhone = "+" + phone.replace("+", "");
 
-        if (!user) {
-            throw new NotFoundException("User not found with this phone number")
-        }
+    const savedOtp = await this.redisService.getRegOtp(normalizedPhone);
 
-        const reset = await this.prisma.passwordReset.findFirst({
-            where: {
-                userId: user.id,
-                otp,
-                expiresAt: {
-                    gt: new Date(),
-                }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        })
-        if (!reset) {
-            throw new NotFoundException("OTP noto'g'ri yoki muddati tugagan")
-        }
-        return {
-            success: true,
-            message: 'OTP verified',
-            resetId: reset.id,
-        };
+    console.log("PHONE:", normalizedPhone);
+    console.log("SAVED OTP:", savedOtp);
+    console.log("ENTERED OTP:", otp);
+
+    if (!savedOtp || savedOtp !== otp) {
+        throw new NotFoundException(
+            "OTP noto'g'ri yoki muddati tugagan"
+        );
     }
+
+    await this.redisService.delRegOtp(normalizedPhone);
+
+    return {
+        success: true,
+        message: "OTP verified",
+    };
+}
+
+
     async resetPassword(phone: string, otp: string, password: string) {
         const user = await this.prisma.user.findUnique({
             where: { phone: phone }
@@ -101,23 +102,18 @@ export class AuthService {
         if (!user) {
             throw new NotFoundException("User not found with this phone number")
         }
-
-        const reset = await this.prisma.passwordReset.findFirst({
-            where: {
-                userId: user.id,
-                otp,
-                expiresAt: {
-                    gt: new Date(),
-                }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        })
-        if (!reset) {
-            throw new NotFoundException("OTP noto'g'ri yoki muddati tugagan")
+        const savedOtp = await this.redisService.getResOtp(phone)
+        if (!savedOtp) {
+            throw new NotFoundException(
+                "OTP noto'g'ri yoki muddati tugagan"
+            );
         }
 
+        if (savedOtp !== otp) {
+            throw new NotFoundException(
+                "OTP noto'g'ri yoki muddati tugagan"
+            );
+        }
 
         await this.prisma.user.update({
             where: { id: user.id },
@@ -125,15 +121,12 @@ export class AuthService {
                 password: await hashPassword(password)
             }
         })
-        await this.prisma.passwordReset.delete({
-            where: {
-                id: reset.id,
-            },
-        });
+        await this.redisService.delResOtp(phone);
 
-        return{
-            success:true,
-            message:"Password successfully changed"
+
+        return {
+            success: true,
+            message: "Password successfully changed"
         }
     }
 

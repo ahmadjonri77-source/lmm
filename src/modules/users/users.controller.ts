@@ -67,12 +67,35 @@ export class UsersController {
     @ApiOperation({
         summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
     })
+    @ApiConsumes("multipart/form-data")
+    @ApiBody({
+        schema: {
+            type: "object",
+            properties: {
+                full_name: { type: "string" },
+                phone: { type: "string" },
+                email: { type: "string" },
+                password: { type: "string" },
+                file: { format: "binary", type: "string" },
+            }
+        }
+    })
     @Patch("admin/:id")
+    @UseInterceptors(FileInterceptor("file", {
+        storage: diskStorage({
+            destination: "./src/uploads/images",
+            filename: (req, file, cb) => {
+                const filename = new Date().getTime() + "." + file.mimetype.split("/")[1]
+                cb(null, filename)
+            }
+        })
+    }))
     updateAdmin(
         @Body() payload: UpdateAdminDto,
-        @Param("id", ParseIntPipe) id: number
+        @Param("id", ParseIntPipe) id: number,
+        @UploadedFile() file?: Express.Multer.File
     ) {
-        return this.userService.updateAdmin(payload, id)
+        return this.userService.updateAdmin(payload, id, file?.filename)
     }
 
 
