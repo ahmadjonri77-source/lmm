@@ -1,4 +1,4 @@
-name: Deploy LMM
+name: Deploy
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -18,15 +17,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            cd /home/ubuntu/lmm
-
-            echo "===== PULLING LATEST CODE ====="
+            cd /home/ubuntu/lmn_backend
             git pull origin main
-
-            echo "===== REBUILDING ====="
             docker compose down
             docker compose build
             docker compose up -d
-
-            echo "===== STATUS ====="
             docker compose ps
