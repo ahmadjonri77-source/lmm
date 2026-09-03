@@ -3,11 +3,10 @@ import Redis from "ioredis";
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
-    private readonly redis = new Redis({
-        host: 'localhost',
-        port: 6379
+       private readonly redis = new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379
     });
-
     async setRegOtp(phone: string, otp: string) {
 
 
