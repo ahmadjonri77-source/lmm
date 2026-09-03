@@ -17,7 +17,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            cd /home/ubuntu/lmn_backend
+            cd /home/ubuntu/lmm
             git pull origin main
             docker compose down
             docker compose build
