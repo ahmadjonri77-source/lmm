@@ -19,10 +19,6 @@ jobs:
             set -e
             cd /home/ubuntu/lmm
             git pull origin main
-            docker compose down
             docker compose build
             docker compose up -d
             docker compose ps
-volumes:
-  baza_data:
-  redis_data:
