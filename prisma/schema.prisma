@@ -76,13 +76,16 @@ model MentorProfile {
 }
 
 model AssignedCourse {
+  id        Int       @id @default(autoincrement())
   userId    Int
   coursesId Int
   user      User    @relation(references: [id], fields: [userId], onDelete: Cascade)
-  course    Courses @relation(references: [id], fields: [coursesId],onDelete: Cascade)
+  course    Courses @relation(references: [id], fields: [coursesId], onDelete: Cascade)
+  status    Status  @default(INACTIVE)
 
-  @@id([userId,coursesId])
-  
+  create_at DateTime @default(now())
+  update_at DateTime @updatedAt
+
 }
 
 model Categories {

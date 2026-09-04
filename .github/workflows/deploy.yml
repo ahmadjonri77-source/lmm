@@ -23,3 +23,6 @@ jobs:
             docker compose build
             docker compose up -d
             docker compose ps
+volumes:
+  baza_data:
+  redis_data:

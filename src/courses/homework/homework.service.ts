@@ -14,7 +14,6 @@ export class HomeworkService {
     if (!lesson) {
       throw new NotFoundException("Lesson not found with this id")
     }
-    console.log(file);
 
     await this.prisma.homeworks.create({
       data: {

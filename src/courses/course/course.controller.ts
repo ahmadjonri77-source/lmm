@@ -197,6 +197,19 @@ export class CourseController {
   @ApiOperation({
     summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
   })
+  @Patch("active/:id")
+  coursActive(
+    @Param("id", ParseIntPipe) id: number
+  ){
+    return this.courseService.coursActive(id)
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @ApiOperation({
+    summary: `${UserRole.SUPERADMIN} ${UserRole.ADMIN}`
+  })
   @Delete(":id")
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.courseService.deleteCourse(id);

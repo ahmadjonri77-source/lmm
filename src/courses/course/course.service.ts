@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { BuyCourseDto, CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/core/database/prisma.service';
-import { UserRole } from '@prisma/client';
+import { Status, UserRole } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
@@ -196,6 +196,25 @@ export class CourseService {
       message: "Course successfull updated"
     }
 
+  }
+  async coursActive(id: number) {
+    const cours = await this.prisma.assignedCourse.findUnique({
+      where: { id: id }
+    })
+
+    if (!cours) {
+      throw new NotFoundException("AssignedCourse not found with this id")
+    }
+    await this.prisma.assignedCourse.update({
+      where: { id: id },
+      data: {
+        status: Status.ACTIVE
+      }
+    })
+    return {
+      success: true,
+      message: "AssignedCourse updated successfully"
+    };
   }
 
   async deleteCourse(id: number) {

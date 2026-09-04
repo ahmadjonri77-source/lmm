@@ -9,11 +9,16 @@ import { Roles } from 'src/common/decorator/role';
 import { UserRole } from '@prisma/client';
 import { AuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
+import { VideoService } from 'src/common/utils/video.service';
+import { convertHeic } from 'src/common/utils/image.util';
 
 @ApiBearerAuth('access-token')
 @Controller('homework')
 export class HomeworkController {
-  constructor(private readonly homeworkService: HomeworkService) { }
+  constructor(
+    private readonly homeworkService: HomeworkService,
+    private readonly videoService: VideoService
+  ) { }
 
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
@@ -42,29 +47,35 @@ export class HomeworkController {
         }
 
         if (file.mimetype.startsWith('video/')) {
-          return cb(null, './src/uploads/temp');
+          return cb(null, './src/uploads/videos');
         }
+        return cb(null, './src/uploads/videos');
       },
       filename: (req, file, cb) => {
-        let type = "mp4"
-        console.log(file);
+        const ext = file.originalname.split('.').pop();
 
-        if (file.mimetype.startsWith('image/')) {
-          type = file.mimetype.split("/")[1]
-        }
-        const filename = new Date().getTime() + "." + type
-        cb(null, filename)
-        console.log(filename);
+        const filename = `${Date.now()}.${ext}`;
 
-      }
+        cb(null, filename);
+      },
     })
   }))
 
 
-  create(
+  async create(
     @Body() createHomeworkDto: CreateHomeworkDto,
     @UploadedFile() file?: Express.Multer.File) {
-    return this.homeworkService.createHomework(createHomeworkDto, file?.filename);
+    let filename = file?.filename;
+
+    if (file?.mimetype.startsWith('video/')) {
+      const inputPath = file.path;
+
+      filename = await this.videoService.convertToMp4(inputPath);
+    }
+    if (file?.mimetype.startsWith('image/')) {
+      filename = file ? await convertHeic(file) : undefined
+    }
+    return this.homeworkService.createHomework(createHomeworkDto, filename);
   }
 
   @UseGuards(AuthGuard, RoleGuard)
@@ -112,12 +123,11 @@ export class HomeworkController {
         }
 
         if (file.mimetype.startsWith('video/')) {
-          return cb(null, './src/uploads/temp');
+          return cb(null, './src/uploads/videos');
         }
       },
       filename: (req, file, cb) => {
         let type = "mp4"
-        console.log(file);
 
         if (file.mimetype.startsWith('image/')) {
           type = file.mimetype.split("/")[1]
